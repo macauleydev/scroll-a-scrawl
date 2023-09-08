@@ -26,6 +26,7 @@ const canvas = document.querySelector(".canvas");
 createCanvas(5, 5);
 syncCurrentPixel();
 indicateCurrentPixel();
+draw();
 
 function syncCurrentPixel() {
     currentPixel = document.querySelector(
