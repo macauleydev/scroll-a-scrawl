@@ -14,3 +14,37 @@ img {
     display: block;
     max-width: 100%;
 }
+
+.container {
+    /* reconsider this section */
+    display: flex;
+    align-items: center;
+    height: 100svh;
+}
+
+.canvas {
+    display: flex;
+    flex-direction: row;
+    height: 90svh;
+    aspect-ratio: 1 / 1;
+    margin-inline: auto;
+}
+
+.column {
+    flex: 1;
+    display: flex;
+    flex-flow: column;
+}
+
+.pixel {
+    flex: 1;
+    border: 1px solid black;
+}
+
+.drawn {
+    background-color: black;
+}
+
+#currentPixel {
+    border: 3px solid red;
+}

@@ -10,6 +10,7 @@ let wheelNorth = NORTH;
 let penMovement = [0, 0];
 let penLatitude = 0;
 let penLongitude = 0;
+let currentPixel;
 let wheelSign;
 let mod = {
     shift: false,
@@ -18,12 +19,52 @@ let mod = {
     meta: false,
     altMeta: false,
 };
+const canvas = document.querySelector(".canvas");
 
 // TODO: test on mobile. May need a different event listener.
 
+createCanvas(5, 5);
+syncCurrentPixel();
+indicateCurrentPixel();
+
+function syncCurrentPixel() {
+    currentPixel = document.querySelector(
+        `[data-latitude="${penLatitude}"][data-longitude="${penLongitude}"]`
+    );
+}
+function indicateCurrentPixel() {
+    currentPixel.id = "currentPixel";
+}
+function unindicateCurrentPixel() {
+    currentPixel.removeAttribute("id");
+}
+
+function createCanvas(width = 5, height = 5) {
+    for (let i = 0; i < width; i++) {
+        let column = document.createElement("div");
+        column.classList.add("column");
+        let longitude = i - Math.floor(width / 2);
+        column.dataset.longitude = longitude;
+        createPixelsIn(column, height, longitude);
+        canvas.appendChild(column);
+    }
+}
+
+function createPixelsIn(containerElement, numberOfPixels, longitude) {
+    for (let i = 0; -i < numberOfPixels; i--) {
+        let pixel = document.createElement("div");
+        pixel.classList.add("pixel");
+        pixel.dataset.latitude = i + Math.floor(numberOfPixels / 2);
+        pixel.dataset.longitude = longitude;
+        containerElement.appendChild(pixel);
+    }
+}
+
 document.addEventListener("wheel", moveAndDraw);
 function moveAndDraw(wheelEvent) {
+    unindicateCurrentPixel();
     movePen(wheelEvent);
+    indicateCurrentPixel();
     draw(penLatitude, penLongitude);
     console.log("");
 }
@@ -32,12 +73,15 @@ function draw(penPosition) {
     console.log(`This "draw" function will draw based on the value below.`);
     console.log(`penLatitude: ${penLatitude}`);
     console.log(`penLongitude: ${penLongitude}`);
+    syncCurrentPixel();
+    console.log(currentPixel);
+    currentPixel.classList.add("drawn");
 }
 
 function movePen(e) {
     setWheelNorth(e);
     console.log(
-        `This "movePen" function will move the pen based on the values below.`
+        `This "movePen" function moves the pen based on the values below.`
     );
     console.log(`wheelSign: ${wheelSign}`);
     console.log(`wheelNorth: ${wheelNorth}`);
@@ -46,15 +90,15 @@ function movePen(e) {
     penMovement[1] = wheelNorth[1] * wheelSign;
 
     // TODO: qualify these to enable wrap-around:
+    
     penLatitude += penMovement[0];
     penLongitude += penMovement[1];
+    syncCurrentPixel();
 }
 
 function setWheelNorth(e) {
-    // Set wheel orientation based on modifier keys
     wheelSign = wheelSignOf(e);
     mod = modifierKeysOf(e);
-    // Set wheelNorth according to wheelSign & mod
 
     if (mod.ctrl) {
         wheelNorth = NORTH_WEST;
