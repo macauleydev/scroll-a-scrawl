@@ -20,14 +20,23 @@ let mod = {
     altMeta: false,
 };
 const canvas = document.querySelector(".canvas");
+let canvasSize = 15;
+let minLatitude, maxLatitude, minLongitude, maxLongitude;
+setRanges();
 
 // TODO: test on mobile. May need a different event listener.
 
-createCanvas(5, 5);
+createCanvas(canvasSize, canvasSize);
 syncCurrentPixel();
 indicateCurrentPixel();
 draw();
 
+function setRanges(height, width) {
+    minLatitude = -Math.floor(height / 2);
+    maxLatitude = minLatitude + (height - 1);
+    minLongitude = -Math.floor(width / 2);
+    maxLongitude = minLongitude + (width - 1);
+}
 function syncCurrentPixel() {
     currentPixel = document.querySelector(
         `[data-latitude="${penLatitude}"][data-longitude="${penLongitude}"]`
@@ -40,11 +49,11 @@ function unindicateCurrentPixel() {
     currentPixel.removeAttribute("id");
 }
 
-function createCanvas(width = 5, height = 5) {
-    for (let i = 0; i < width; i++) {
+function createCanvas(height = canvasSize, width = canvasSize) {
+    setRanges(height, width);
+    for (let longitude = minLongitude; longitude <= maxLongitude; longitude++) {
         let column = document.createElement("div");
         column.classList.add("column");
-        let longitude = i - Math.floor(width / 2);
         column.dataset.longitude = longitude;
         createPixelsIn(column, height, longitude);
         canvas.appendChild(column);
@@ -52,10 +61,10 @@ function createCanvas(width = 5, height = 5) {
 }
 
 function createPixelsIn(containerElement, numberOfPixels, longitude) {
-    for (let i = 0; -i < numberOfPixels; i--) {
+    for (let latitude = maxLatitude; latitude >= minLatitude; latitude--) {
         let pixel = document.createElement("div");
         pixel.classList.add("pixel");
-        pixel.dataset.latitude = i + Math.floor(numberOfPixels / 2);
+        pixel.dataset.latitude = latitude;
         pixel.dataset.longitude = longitude;
         containerElement.appendChild(pixel);
     }
@@ -90,10 +99,20 @@ function movePen(e) {
     penMovement[0] = wheelNorth[0] * wheelSign;
     penMovement[1] = wheelNorth[1] * wheelSign;
 
-    // TODO: qualify these to enable wrap-around:
-    
     penLatitude += penMovement[0];
+    if (penLatitude > maxLatitude) {
+        penLatitude = minLatitude;
+    } else if (penLatitude < minLatitude) {
+        penLatitude = maxLatitude;
+    }
+
     penLongitude += penMovement[1];
+    if (penLongitude > maxLongitude) {
+        penLongitude = minLongitude;
+    } else if (penLongitude < minLongitude) {
+        penLongitude = maxLongitude;
+    }
+
     syncCurrentPixel();
 }
 
@@ -101,9 +120,9 @@ function setWheelNorth(e) {
     wheelSign = wheelSignOf(e);
     mod = modifierKeysOf(e);
 
-    if (mod.ctrl) {
+    if (mod.altMeta) {
         wheelNorth = NORTH_WEST;
-    } else if (mod.altMeta) {
+    } else if (mod.ctrl) {
         wheelNorth = NORTH_EAST;
     } else if (mod.shift) {
         wheelNorth = WEST;
