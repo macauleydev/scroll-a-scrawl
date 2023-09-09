@@ -47,6 +47,7 @@ body {
 .pixel {
     flex: 1;
     margin: 1px;
+    background-color: lightgoldenrodyellow;
 }
 
 .drawn {

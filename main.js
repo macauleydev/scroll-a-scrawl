@@ -52,21 +52,105 @@ function unindicateCurrentPixel() {
 function createCanvas(height = canvasSize, width = canvasSize) {
     setRanges(height, width);
     for (let longitude = minLongitude; longitude <= maxLongitude; longitude++) {
-        let column = document.createElement("div");
-        column.classList.add("column");
-        column.dataset.longitude = longitude;
-        createPixelsIn(column, height, longitude);
+        let column = createColumn(longitude, height);
         canvas.appendChild(column);
     }
 }
 
-function createPixelsIn(containerElement, numberOfPixels, longitude) {
+function createColumn(longitude, height) {
+    let column = document.createElement("div");
+    column.classList.add("column");
+    column.dataset.longitude = longitude;
+    column = fillColumnWithPixels(column, longitude, height);
+    return column;
+}
+
+function fillColumnWithPixels(columnElement, longitude, numberOfPixels) {
     for (let latitude = maxLatitude; latitude >= minLatitude; latitude--) {
-        let pixel = document.createElement("div");
-        pixel.classList.add("pixel");
-        pixel.dataset.latitude = latitude;
-        pixel.dataset.longitude = longitude;
-        containerElement.appendChild(pixel);
+        let pixel = createPixel(latitude, longitude);
+        columnElement.appendChild(pixel);
+    }
+    return columnElement;
+}
+
+function createPixel(latitude, longitude) {
+    let pixel = document.createElement("div");
+    pixel.classList.add("pixel");
+    pixel.dataset.latitude = latitude;
+    pixel.dataset.longitude = longitude;
+    return pixel;
+}
+
+function wrapCanvas(thickness = 1) {
+    for (i = 1; i <= thickness; i++) {
+        wrapCanvasByOne();
+    }
+    function wrapCanvasByOne() {
+        let oldCanvasSize = canvasSize;
+        addWestColumn();
+        addEastColumn();
+        growEachColumn();
+        canvasSize += 2;
+    }
+    function addWestColumn() {
+        let oldMinLongitude = minLongitude;
+        let oldWestColumn = document.querySelector(
+            `.column[data-longitude="${minLongitude}"]`
+        );
+        minLongitude -= 1;
+        let newColumn = createColumn(minLongitude, canvasSize);
+        canvas.insertBefore(newColumn, oldWestColumn);
+    }
+    function addEastColumn() {
+        let oldMaxLongitude = maxLongitude;
+        maxLongitude += 1;
+        let newColumn = createColumn(maxLongitude, canvasSize);
+        canvas.appendChild(newColumn);
+    }
+
+    function growEachColumn() {
+        for (
+            let longitude = minLongitude;
+            longitude <= maxLongitude;
+            longitude++
+        ) {
+            let column = document.querySelector(
+                `.column[data-longitude="${longitude}"]`
+            );
+            addNorthPixel(column, longitude);
+            addSouthPixel(column, longitude);
+        }
+        maxLatitude += 1;
+        minLatitude -= 1;
+
+        function addNorthPixel(columnElement, longitude) {
+            let oldMaxLatitude = maxLatitude;
+            let oldNorthPixel = document.querySelector(
+                `.pixel[data-longitude="${longitude}"][data-latitude="${maxLatitude}"]`
+            );
+            let newPixel = createPixel(maxLatitude + 1, longitude);
+            columnElement.insertBefore(newPixel, oldNorthPixel);
+        }
+        function addSouthPixel(columnElement, longitude) {
+            let oldMinLatitude = minLatitude;
+            let newPixel = createPixel(minLatitude - 1, longitude);
+            columnElement.appendChild(newPixel);
+        }
+    }
+}
+
+function cropCanvas(thickness) {
+    for (i = 1; i <= thickness; i++) {
+        cropCanvasByOne();
+    }
+    function cropCanvasByOne() {}
+}
+
+document.addEventListener("keydown", keyListener);
+
+function keyListener(e) {
+    if (e.code === "Equal") {
+        wrapCanvas(1);
     }
 }
 
@@ -120,7 +204,9 @@ function setWheelNorth(e) {
     wheelSign = wheelSignOf(e);
     mod = modifierKeysOf(e);
 
-    if (mod.altMeta) {
+    if (mod.altMeta && mod.ctrl) {
+        wheelNorth = NORTH;
+    } else if (mod.altMeta) {
         wheelNorth = NORTH_WEST;
     } else if (mod.ctrl) {
         wheelNorth = NORTH_EAST;
