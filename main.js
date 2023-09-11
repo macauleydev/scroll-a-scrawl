@@ -24,7 +24,7 @@ let canvasSize = 15;
 let minLatitude, maxLatitude, minLongitude, maxLongitude;
 setRanges();
 
-// TODO: test on mobile. May need a different event listener.
+// TODO: test on mobile. May need to use Touch event listeners.
 
 createCanvas(canvasSize, canvasSize);
 syncCurrentPixel();
@@ -81,11 +81,11 @@ function createPixel(latitude, longitude) {
     return pixel;
 }
 
-function wrapCanvas(thickness = 1) {
+function padCanvas(thickness = 1) {
     for (i = 1; i <= thickness; i++) {
-        wrapCanvasByOne();
+        padCanvasByOne();
     }
-    function wrapCanvasByOne() {
+    function padCanvasByOne() {
         let oldCanvasSize = canvasSize;
         addWestColumn();
         addEastColumn();
@@ -139,6 +139,7 @@ function wrapCanvas(thickness = 1) {
     }
 }
 
+// TO DO:
 function cropCanvas(thickness) {
     for (i = 1; i <= thickness; i++) {
         cropCanvasByOne();
@@ -150,7 +151,7 @@ document.addEventListener("keydown", keyListener);
 
 function keyListener(e) {
     if (e.code === "Equal") {
-        wrapCanvas(1);
+        padCanvas(1);
     }
 }
 
@@ -184,20 +185,38 @@ function movePen(e) {
     penMovement[1] = wheelNorth[1] * wheelSign;
 
     penLatitude += penMovement[0];
+    penLongitude += penMovement[1];
+    doNotWrapAround();
+
+    syncCurrentPixel();
+}
+
+function doWrapAround() {
     if (penLatitude > maxLatitude) {
         penLatitude = minLatitude;
     } else if (penLatitude < minLatitude) {
         penLatitude = maxLatitude;
     }
 
-    penLongitude += penMovement[1];
     if (penLongitude > maxLongitude) {
         penLongitude = minLongitude;
     } else if (penLongitude < minLongitude) {
         penLongitude = maxLongitude;
     }
+}
 
-    syncCurrentPixel();
+function doNotWrapAround() {
+    if (penLatitude > maxLatitude) {
+        penLatitude = maxLatitude;
+    } else if (penLatitude < minLatitude) {
+        penLatitude = minLatitude;
+    }
+
+    if (penLongitude > maxLongitude) {
+        penLongitude = maxLongitude;
+    } else if (penLongitude < minLongitude) {
+        penLongitude = minLongitude;
+    }
 }
 
 function setWheelNorth(e) {
