@@ -1,13 +1,33 @@
-const NORTH = [1, 0];
-const SOUTH = [-1, 0];
-const EAST = [0, 1];
-const WEST = [0, -1];
-const NORTH_EAST = [1, 1];
-const SOUTH_EAST = [-1, 1];
-const NORTH_WEST = [1, -1];
-const SOUTH_WEST = [-1, -1];
-let wheelNorth = NORTH;
-let wheelNorthString = "N";
+const N_DELTA = [1, 0];
+const S_DELTA = [-1, 0];
+const E_DELTA = [0, 1];
+const W_DELTA = [0, -1];
+const NE_DELTA = [1, 1];
+const SE_DELTA = [-1, 1];
+const NW_DELTA = [1, -1];
+const SW_DELTA = [-1, -1];
+let nDelta = N_DELTA;
+let sDelta = S_DELTA;
+let eDelta = E_DELTA;
+let wDelta = W_DELTA;
+let neDelta = NE_DELTA;
+let seDelta = SE_DELTA;
+let nwDelta = NW_DELTA;
+let swDelta = SW_DELTA;
+const COMPASS_MAPPING = {
+    0: N_DELTA,
+    45: NE_DELTA,
+    90: E_DELTA,
+    135: SE_DELTA,
+    180: S_DELTA,
+    225: SW_DELTA,
+    270: W_DELTA,
+    315: NW_DELTA,
+};
+let currentCompassMapping = { ...COMPASS_MAPPING };
+
+let compassNorth = N_DELTA;
+let compassNorthString = "N";
 let compassAngle = 0;
 let penMovement = [0, 0];
 let penLatitude = 0;
@@ -33,6 +53,51 @@ syncCurrentPixel();
 indicateCurrentPixel();
 draw();
 
+document.addEventListener("keydown", keydownListener);
+document.addEventListener("keyup", keyupListener);
+document.addEventListener("wheel", moveAndDraw);
+
+function keydownListener(e) {
+    if (e.code === "Equal") {
+        padCanvas(1);
+    }
+    if (e.key === "a") {
+        rotateCompass(-45, e);
+    }
+    if (e.key === "z") {
+        rotateCompass(45, e);
+    }
+
+    orientCompass(e);
+    console.log(`compassNorthString: ${compassNorthString}`);
+    console.log(`compassAngle: ${compassAngle}\n\n`);
+}
+
+function keyupListener(e) {
+    orientCompass(e);
+    console.log(`compassNorthString: ${compassNorthString}`);
+    console.log(`compassAngle: ${compassAngle}\n\n`);
+}
+
+function rotateCompass(rotationAngle, event) {
+    let previousCompassMapping = { ...currentCompassMapping };
+
+    for (let i = 0; i < 360; i += 45) {
+        let newAngle = (i - rotationAngle) % 360;
+        currentCompassMapping[`${newAngle}`] = previousCompassMapping[i];
+    }
+    nDelta = currentCompassMapping[0];
+    neDelta = currentCompassMapping[45];
+    eDelta = currentCompassMapping[90];
+    seDelta = currentCompassMapping[135];
+    sDelta = currentCompassMapping[180];
+    swDelta = currentCompassMapping[225];
+    wDelta = currentCompassMapping[270];
+    nwDelta = currentCompassMapping[315];
+
+    orientCompass(event);
+}
+
 function setRanges(height, width) {
     minLatitude = -Math.floor(height / 2);
     maxLatitude = minLatitude + (height - 1);
@@ -46,7 +111,6 @@ function syncCurrentPixel() {
 }
 function indicateCurrentPixel() {
     currentPixel.id = "currentPixel";
-    // currentPixel.textContent = "\u2195 abcdefghijklmnop qrs tuv wxyz abcdefg hijklmnop";
     let newArrowContainer = document.createElement("div");
     let upArrow = document.createElement("div");
     let downArrow = document.createElement("div");
@@ -54,14 +118,13 @@ function indicateCurrentPixel() {
     upArrow.id = "upArrow";
     downArrow.id = "downArrow";
     currentPixel.appendChild(newArrowContainer);
-    rotateCompassArrows();
+    syncCompassArrows();
     newArrowContainer.appendChild(upArrow);
     newArrowContainer.appendChild(downArrow);
 }
 function unindicateCurrentPixel() {
     currentPixel.removeAttribute("id");
     currentPixel.removeChild(currentPixel.firstChild);
-    // currentPixel.textContent = "";
 }
 
 function createCanvas(height = canvasSize, width = canvasSize) {
@@ -162,25 +225,6 @@ function cropCanvas(thickness) {
     function cropCanvasByOne() {}
 }
 
-document.addEventListener("keydown", keydownListener);
-document.addEventListener("keyup", keyupListener);
-
-function keydownListener(e) {
-    if (e.code === "Equal") {
-        padCanvas(1);
-    }
-    setWheelNorth(e);
-    console.log(wheelNorthString);
-    console.log(compassAngle);
-}
-
-function keyupListener(e) {
-    setWheelNorth(e);
-    console.log(wheelNorthString);
-    console.log(compassAngle);
-}
-
-document.addEventListener("wheel", moveAndDraw);
 function moveAndDraw(wheelEvent) {
     unindicateCurrentPixel();
     movePen(wheelEvent);
@@ -190,24 +234,16 @@ function moveAndDraw(wheelEvent) {
 }
 
 function draw(penPosition) {
-    console.log(`This "draw" function will draw based on the value below.`);
-    console.log(`penLatitude: ${penLatitude}`);
-    console.log(`penLongitude: ${penLongitude}`);
     syncCurrentPixel();
-    console.log(currentPixel);
     currentPixel.classList.add("drawn");
 }
 
 function movePen(e) {
-    setWheelNorth(e);
-    console.log(
-        `This "movePen" function moves the pen based on the values below.`
-    );
-    console.log(`wheelSign: ${wheelSign}`);
-    console.log(`wheelNorth: ${wheelNorth}`);
+    orientCompass(e);
+    wheelSign = wheelSignOf(e);
 
-    penMovement[0] = wheelNorth[0] * wheelSign;
-    penMovement[1] = wheelNorth[1] * wheelSign;
+    penMovement[0] = compassNorth[0] * wheelSign;
+    penMovement[1] = compassNorth[1] * wheelSign;
 
     penLatitude += penMovement[0];
     penLongitude += penMovement[1];
@@ -244,68 +280,67 @@ function doNotWrapAround() {
     }
 }
 
-function setWheelNorth(e) {
-    wheelSign = wheelSignOf(e);
-    mod = modifierKeysOf(e);
+function orientCompass(event) {
+    mod = modifierKeysOf(event);
 
     if (mod.altMeta && mod.ctrl) {
-        wheelNorth = NORTH;
+        compassNorth = nDelta;
     } else if (mod.altMeta) {
-        wheelNorth = NORTH_WEST;
+        compassNorth = nwDelta;
     } else if (mod.ctrl) {
-        wheelNorth = NORTH_EAST;
+        compassNorth = neDelta;
     } else if (mod.shift) {
-        wheelNorth = WEST;
+        compassNorth = wDelta;
     } else {
-        wheelNorth = NORTH;
+        compassNorth = nDelta;
     }
-    syncWheelNorthString();
+    syncCompassNorthString();
     syncCompassAngle();
 }
 
-function syncWheelNorthString() {
-    wheelNorthString =
-        wheelNorth === NORTH
+function syncCompassNorthString() {
+    compassNorthString =
+        compassNorth === N_DELTA
             ? "N"
-            : wheelNorth === NORTH_WEST
+            : compassNorth === NW_DELTA
             ? "NW"
-            : wheelNorth === NORTH_EAST
+            : compassNorth === NE_DELTA
             ? "NE"
-            : wheelNorth === WEST
+            : compassNorth === W_DELTA
             ? "W"
-            : wheelNorth === EAST
+            : compassNorth === E_DELTA
             ? "E"
-            : wheelNorth === SOUTH_WEST
+            : compassNorth === SW_DELTA
             ? "SW"
-            : wheelNorth === SOUTH_EAST
+            : compassNorth === SE_DELTA
             ? "SE"
-            : wheelNorth === SOUTH
+            : compassNorth === S_DELTA
             ? "S"
-            : wheelNorthString;
+            : compassNorthString;
 }
 
 function syncCompassAngle() {
     compassAngle =
-        wheelNorth === NORTH
+        compassNorth === N_DELTA
             ? 0
-            : wheelNorth === NORTH_WEST
+            : compassNorth === NW_DELTA
             ? -45
-            : wheelNorth === NORTH_EAST
+            : compassNorth === NE_DELTA
             ? 45
-            : wheelNorth === WEST
+            : compassNorth === W_DELTA
             ? -90
-            : wheelNorth === EAST
+            : compassNorth === E_DELTA
             ? 90
-            : wheelNorth === SOUTH_WEST
+            : compassNorth === SW_DELTA
             ? -135
-            : wheelNorth === SOUTH_EAST
+            : compassNorth === SE_DELTA
             ? 135
-            : wheelNorth === SOUTH
+            : compassNorth === S_DELTA
             ? 180
             : compassAngle;
-    rotateCompassArrows();
+    syncCompassArrows();
 }
-function rotateCompassArrows() {
+function syncCompassArrows() {
     let existingArrowContainer = document.querySelector("#arrows");
     if (existingArrowContainer) {
         existingArrowContainer.style.transform = `rotate(${compassAngle}deg)`;
