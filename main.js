@@ -7,6 +7,8 @@ const SOUTH_EAST = [-1, 1];
 const NORTH_WEST = [1, -1];
 const SOUTH_WEST = [-1, -1];
 let wheelNorth = NORTH;
+let wheelNorthString = "N";
+let compassAngle = 0;
 let penMovement = [0, 0];
 let penLatitude = 0;
 let penLongitude = 0;
@@ -44,9 +46,22 @@ function syncCurrentPixel() {
 }
 function indicateCurrentPixel() {
     currentPixel.id = "currentPixel";
+    // currentPixel.textContent = "\u2195 abcdefghijklmnop qrs tuv wxyz abcdefg hijklmnop";
+    let newArrowContainer = document.createElement("div");
+    let upArrow = document.createElement("div");
+    let downArrow = document.createElement("div");
+    newArrowContainer.id = "arrows";
+    upArrow.id = "upArrow";
+    downArrow.id = "downArrow";
+    currentPixel.appendChild(newArrowContainer);
+    rotateCompassArrows();
+    newArrowContainer.appendChild(upArrow);
+    newArrowContainer.appendChild(downArrow);
 }
 function unindicateCurrentPixel() {
     currentPixel.removeAttribute("id");
+    currentPixel.removeChild(currentPixel.firstChild);
+    // currentPixel.textContent = "";
 }
 
 function createCanvas(height = canvasSize, width = canvasSize) {
@@ -147,12 +162,22 @@ function cropCanvas(thickness) {
     function cropCanvasByOne() {}
 }
 
-document.addEventListener("keydown", keyListener);
+document.addEventListener("keydown", keydownListener);
+document.addEventListener("keyup", keyupListener);
 
-function keyListener(e) {
+function keydownListener(e) {
     if (e.code === "Equal") {
         padCanvas(1);
     }
+    setWheelNorth(e);
+    console.log(wheelNorthString);
+    console.log(compassAngle);
+}
+
+function keyupListener(e) {
+    setWheelNorth(e);
+    console.log(wheelNorthString);
+    console.log(compassAngle);
 }
 
 document.addEventListener("wheel", moveAndDraw);
@@ -233,6 +258,57 @@ function setWheelNorth(e) {
         wheelNorth = WEST;
     } else {
         wheelNorth = NORTH;
+    }
+    syncWheelNorthString();
+    syncCompassAngle();
+}
+
+function syncWheelNorthString() {
+    wheelNorthString =
+        wheelNorth === NORTH
+            ? "N"
+            : wheelNorth === NORTH_WEST
+            ? "NW"
+            : wheelNorth === NORTH_EAST
+            ? "NE"
+            : wheelNorth === WEST
+            ? "W"
+            : wheelNorth === EAST
+            ? "E"
+            : wheelNorth === SOUTH_WEST
+            ? "SW"
+            : wheelNorth === SOUTH_EAST
+            ? "SE"
+            : wheelNorth === SOUTH
+            ? "S"
+            : wheelNorthString;
+}
+
+function syncCompassAngle() {
+    compassAngle =
+        wheelNorth === NORTH
+            ? 0
+            : wheelNorth === NORTH_WEST
+            ? -45
+            : wheelNorth === NORTH_EAST
+            ? 45
+            : wheelNorth === WEST
+            ? -90
+            : wheelNorth === EAST
+            ? 90
+            : wheelNorth === SOUTH_WEST
+            ? -135
+            : wheelNorth === SOUTH_EAST
+            ? 135
+            : wheelNorth === SOUTH
+            ? 180
+            : compassAngle;
+    rotateCompassArrows();
+}
+function rotateCompassArrows() {
+    let existingArrowContainer = document.querySelector("#arrows");
+    if (existingArrowContainer) {
+        existingArrowContainer.style.transform = `rotate(${compassAngle}deg)`;
     }
 }
 

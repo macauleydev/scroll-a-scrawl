@@ -22,11 +22,20 @@ body {
 .container {
     /* reconsider this section */
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
     height: 100svh;
+    width: calc(100% - 7rem);
+    margin-inline: auto;
+}
+
+.text {
+    flex: 1;
 }
 
 .canvas {
+    align-self: center;
     background-color: white;
     display: flex;
     /* justify-content: space-evenly; */
@@ -55,5 +64,34 @@ body {
 }
 
 #currentPixel {
-    outline: 2px solid red;
+    /* outline: 2px solid red; */
+    color: red;
+    text-align: center;
+    overflow: visible;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#arrows {
+    position: relative;
+    transition: all 80ms;
+}
+
+#upArrow,
+#downArrow {
+    position: absolute;
+    width: 0px;
+    height: 0px;
+    inset: 50%;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+}
+#upArrow {
+    transform: translate(-50%, calc(-100% - 1px));
+    border-bottom: 18px solid red;
+}
+#downArrow {
+    transform: translate(-50%, 1px);
+    border-top: 18px solid white;
 }
