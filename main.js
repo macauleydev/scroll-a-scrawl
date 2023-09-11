@@ -29,6 +29,8 @@ let currentCompassMapping = { ...COMPASS_MAPPING };
 let compassNorth = N_DELTA;
 let compassNorthString = "N";
 let compassAngle = 0;
+let newCompassAngle = 0;
+let previousCompassAngle = 0;
 let penMovement = [0, 0];
 let penLatitude = 0;
 let penLongitude = 0;
@@ -69,14 +71,14 @@ function keydownListener(e) {
     }
 
     orientCompass(e);
-    console.log(`compassNorthString: ${compassNorthString}`);
-    console.log(`compassAngle: ${compassAngle}\n\n`);
+    // console.log(`compassNorthString: ${compassNorthString}`);
+    // console.log(`compassAngle: ${compassAngle}\n\n`);
 }
 
 function keyupListener(e) {
     orientCompass(e);
-    console.log(`compassNorthString: ${compassNorthString}`);
-    console.log(`compassAngle: ${compassAngle}\n\n`);
+    // console.log(`compassNorthString: ${compassNorthString}`);
+    // console.log(`compassAngle: ${compassAngle}\n\n`);
 }
 
 function rotateCompass(rotationAngle, event) {
@@ -84,6 +86,7 @@ function rotateCompass(rotationAngle, event) {
 
     for (let i = 0; i < 360; i += 45) {
         let newAngle = (i - rotationAngle) % 360;
+        if (newAngle < 0) newAngle += 360;
         currentCompassMapping[`${newAngle}`] = previousCompassMapping[i];
     }
     nDelta = currentCompassMapping[0];
@@ -98,12 +101,107 @@ function rotateCompass(rotationAngle, event) {
     orientCompass(event);
 }
 
-function setRanges(height, width) {
-    minLatitude = -Math.floor(height / 2);
-    maxLatitude = minLatitude + (height - 1);
-    minLongitude = -Math.floor(width / 2);
-    maxLongitude = minLongitude + (width - 1);
+function orientCompass(event) {
+    mod = modifierKeysOf(event);
+
+    if (mod.altMeta && mod.ctrl) {
+        compassNorth = nDelta;
+    } else if (mod.altMeta) {
+        compassNorth = nwDelta;
+    } else if (mod.ctrl) {
+        compassNorth = neDelta;
+    } else if (mod.shift) {
+        compassNorth = wDelta;
+    } else {
+        compassNorth = nDelta;
+    }
+    syncCompassAngle();
+    syncCompassNorthString();
 }
+
+function syncCompassAngle() {
+    previousCompassAngle = compassAngle;
+
+    compassAngle =
+        compassNorth === N_DELTA
+            ? 0
+            : compassNorth === NW_DELTA
+            ? 315
+            : compassNorth === NE_DELTA
+            ? 45
+            : compassNorth === W_DELTA
+            ? 270
+            : compassNorth === E_DELTA
+            ? 90
+            : compassNorth === SW_DELTA
+            ? 225
+            : compassNorth === SE_DELTA
+            ? 135
+            : compassNorth === S_DELTA
+            ? 180
+            : compassAngle;
+
+    // let compassChange = compassAngle - previousCompassAngle;
+    // console.log(
+    //     `compassChange = ${compassChange} (${compassAngle} - ${previousCompassAngle})`
+    // );
+    // if (compassChange > 180) {
+    //     compassAngle -= 360;
+    // } else if (compassChange <= -180) {
+    //     compassAngle += 360;
+    // }
+
+    syncCompassArrows();
+}
+
+function setNearestCompassAngle(value) {}
+
+function syncCompassArrows() {
+    let arrowContainer = document.querySelector("#arrows");
+    if (arrowContainer) {
+        arrowContainer.style.transform = `rotate(${compassAngle}deg)`;
+    }
+}
+
+function syncCompassNorthString() {
+    compassNorthString =
+        compassNorth === N_DELTA
+            ? "N"
+            : compassNorth === NW_DELTA
+            ? "NW"
+            : compassNorth === NE_DELTA
+            ? "NE"
+            : compassNorth === W_DELTA
+            ? "W"
+            : compassNorth === E_DELTA
+            ? "E"
+            : compassNorth === SW_DELTA
+            ? "SW"
+            : compassNorth === SE_DELTA
+            ? "SE"
+            : compassNorth === S_DELTA
+            ? "S"
+            : compassNorthString;
+}
+
+function wheelSignOf(e) {
+    if (e.wheelDeltaY !== 0) {
+        return Math.sign(e.wheelDeltaY);
+    } else {
+        return Math.sign(e.wheelDeltaX);
+    }
+}
+
+function modifierKeysOf(e) {
+    return {
+        shift: e.shiftKey,
+        ctrl: e.ctrlKey,
+        alt: e.altKey,
+        meta: e.metaKey,
+        altMeta: e.altKey || e.metaKey,
+    };
+}
+
 function syncCurrentPixel() {
     currentPixel = document.querySelector(
         `[data-latitude="${penLatitude}"][data-longitude="${penLongitude}"]`
@@ -127,6 +225,61 @@ function unindicateCurrentPixel() {
     currentPixel.removeChild(currentPixel.firstChild);
 }
 
+function moveAndDraw(wheelEvent) {
+    unindicateCurrentPixel();
+    movePen(wheelEvent);
+    indicateCurrentPixel();
+    draw(penLatitude, penLongitude);
+    console.log("");
+}
+
+function draw(penPosition) {
+    syncCurrentPixel();
+    currentPixel.classList.add("drawn");
+}
+
+function movePen(e) {
+    orientCompass(e);
+    wheelSign = wheelSignOf(e);
+
+    penMovement[0] = compassNorth[0] * wheelSign;
+    penMovement[1] = compassNorth[1] * wheelSign;
+
+    penLatitude += penMovement[0];
+    penLongitude += penMovement[1];
+    doNotWrapAround();
+
+    syncCurrentPixel();
+}
+
+function doWrapAround() {
+    if (penLatitude > maxLatitude) {
+        penLatitude = minLatitude;
+    } else if (penLatitude < minLatitude) {
+        penLatitude = maxLatitude;
+    }
+
+    if (penLongitude > maxLongitude) {
+        penLongitude = minLongitude;
+    } else if (penLongitude < minLongitude) {
+        penLongitude = maxLongitude;
+    }
+}
+
+function doNotWrapAround() {
+    if (penLatitude > maxLatitude) {
+        penLatitude = maxLatitude;
+    } else if (penLatitude < minLatitude) {
+        penLatitude = minLatitude;
+    }
+
+    if (penLongitude > maxLongitude) {
+        penLongitude = maxLongitude;
+    } else if (penLongitude < minLongitude) {
+        penLongitude = minLongitude;
+    }
+}
+
 function createCanvas(height = canvasSize, width = canvasSize) {
     setRanges(height, width);
     for (let longitude = minLongitude; longitude <= maxLongitude; longitude++) {
@@ -134,7 +287,12 @@ function createCanvas(height = canvasSize, width = canvasSize) {
         canvas.appendChild(column);
     }
 }
-
+function setRanges(height, width) {
+    minLatitude = -Math.floor(height / 2);
+    maxLatitude = minLatitude + (height - 1);
+    minLongitude = -Math.floor(width / 2);
+    maxLongitude = minLongitude + (width - 1);
+}
 function createColumn(longitude, height) {
     let column = document.createElement("div");
     column.classList.add("column");
@@ -223,144 +381,4 @@ function cropCanvas(thickness) {
         cropCanvasByOne();
     }
     function cropCanvasByOne() {}
-}
-
-function moveAndDraw(wheelEvent) {
-    unindicateCurrentPixel();
-    movePen(wheelEvent);
-    indicateCurrentPixel();
-    draw(penLatitude, penLongitude);
-    console.log("");
-}
-
-function draw(penPosition) {
-    syncCurrentPixel();
-    currentPixel.classList.add("drawn");
-}
-
-function movePen(e) {
-    orientCompass(e);
-    wheelSign = wheelSignOf(e);
-
-    penMovement[0] = compassNorth[0] * wheelSign;
-    penMovement[1] = compassNorth[1] * wheelSign;
-
-    penLatitude += penMovement[0];
-    penLongitude += penMovement[1];
-    doNotWrapAround();
-
-    syncCurrentPixel();
-}
-
-function doWrapAround() {
-    if (penLatitude > maxLatitude) {
-        penLatitude = minLatitude;
-    } else if (penLatitude < minLatitude) {
-        penLatitude = maxLatitude;
-    }
-
-    if (penLongitude > maxLongitude) {
-        penLongitude = minLongitude;
-    } else if (penLongitude < minLongitude) {
-        penLongitude = maxLongitude;
-    }
-}
-
-function doNotWrapAround() {
-    if (penLatitude > maxLatitude) {
-        penLatitude = maxLatitude;
-    } else if (penLatitude < minLatitude) {
-        penLatitude = minLatitude;
-    }
-
-    if (penLongitude > maxLongitude) {
-        penLongitude = maxLongitude;
-    } else if (penLongitude < minLongitude) {
-        penLongitude = minLongitude;
-    }
-}
-
-function orientCompass(event) {
-    mod = modifierKeysOf(event);
-
-    if (mod.altMeta && mod.ctrl) {
-        compassNorth = nDelta;
-    } else if (mod.altMeta) {
-        compassNorth = nwDelta;
-    } else if (mod.ctrl) {
-        compassNorth = neDelta;
-    } else if (mod.shift) {
-        compassNorth = wDelta;
-    } else {
-        compassNorth = nDelta;
-    }
-    syncCompassNorthString();
-    syncCompassAngle();
-}
-
-function syncCompassNorthString() {
-    compassNorthString =
-        compassNorth === N_DELTA
-            ? "N"
-            : compassNorth === NW_DELTA
-            ? "NW"
-            : compassNorth === NE_DELTA
-            ? "NE"
-            : compassNorth === W_DELTA
-            ? "W"
-            : compassNorth === E_DELTA
-            ? "E"
-            : compassNorth === SW_DELTA
-            ? "SW"
-            : compassNorth === SE_DELTA
-            ? "SE"
-            : compassNorth === S_DELTA
-            ? "S"
-            : compassNorthString;
-}
-
-function syncCompassAngle() {
-    compassAngle =
-        compassNorth === N_DELTA
-            ? 0
-            : compassNorth === NW_DELTA
-            ? -45
-            : compassNorth === NE_DELTA
-            ? 45
-            : compassNorth === W_DELTA
-            ? -90
-            : compassNorth === E_DELTA
-            ? 90
-            : compassNorth === SW_DELTA
-            ? -135
-            : compassNorth === SE_DELTA
-            ? 135
-            : compassNorth === S_DELTA
-            ? 180
-            : compassAngle;
-    syncCompassArrows();
-}
-function syncCompassArrows() {
-    let existingArrowContainer = document.querySelector("#arrows");
-    if (existingArrowContainer) {
-        existingArrowContainer.style.transform = `rotate(${compassAngle}deg)`;
-    }
-}
-
-function wheelSignOf(e) {
-    if (e.wheelDeltaY !== 0) {
-        return Math.sign(e.wheelDeltaY);
-    } else {
-        return Math.sign(e.wheelDeltaX);
-    }
-}
-
-function modifierKeysOf(e) {
-    return {
-        shift: e.shiftKey,
-        ctrl: e.ctrlKey,
-        alt: e.altKey,
-        meta: e.metaKey,
-        altMeta: e.altKey || e.metaKey,
-    };
 }
