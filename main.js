@@ -35,7 +35,7 @@ let mod = {
     meta: false,
 };
 const canvas = document.querySelector(".canvas");
-let canvasSize = 15;
+let canvasSize = 21;
 let minLatitude, maxLatitude, minLongitude, maxLongitude;
 
 // TODO: test on mobile. May need to use Touch event listeners.

@@ -17,19 +17,22 @@ img {
 
 body {
     background-color: skyblue;
-    font-family: "Annie Use Your Telescope", cursive;
-    font-family: "Caveat", cursive;
-    font-family: "Shadows Into Light", cursive;
     font-family: "Shantell Sans", cursive;
     font-weight: 400;
 }
 
 h1 {
-    font-family: "Shantell Sans", cursive;
-    font-family: "Caveat", cursive;
     text-align: center;
-    font-weight: 600;
-    font-size: 3rem;
+
+    font-family: "Shantell Sans", cursive;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 2.4rem;
+
+    font-family: "Caveat", cursive;
+    font-weight: 500; /* or 600 or 400 */
+    font-style: normal;
+    font-size: 3.2rem;
 }
 h1,
 h2 {
