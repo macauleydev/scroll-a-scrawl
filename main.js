@@ -28,7 +28,6 @@ let modAngle = 0;
 let penLatitude = 0;
 let penLongitude = 0;
 let currentPixel;
-let wheelSign;
 let mod = {
     shift: false,
     ctrl: false,
@@ -38,14 +37,11 @@ let mod = {
 const canvas = document.querySelector(".canvas");
 let canvasSize = 15;
 let minLatitude, maxLatitude, minLongitude, maxLongitude;
-setRanges();
 
 // TODO: test on mobile. May need to use Touch event listeners.
 
 createCanvas(canvasSize, canvasSize);
-syncCurrentPixel();
-indicateCurrentPixel();
-draw();
+dropPen();
 setEventListeners();
 
 function setEventListeners() {
@@ -59,7 +55,7 @@ function setEventListeners() {
         } else if (e.type === "keydown") {
             keydownAction(e);
         } else if (e.type === "wheel") {
-            moveAndDraw(e);
+            drawWithPen(e);
         }
         document.removeEventListener("keydown", firstEvent);
         document.removeEventListener("keyup", firstEvent);
@@ -67,7 +63,7 @@ function setEventListeners() {
 
         document.addEventListener("keydown", keydownAction);
         document.addEventListener("keyup", keyupAction);
-        document.addEventListener("wheel", moveAndDraw);
+        document.addEventListener("wheel", drawWithPen);
     }
 }
 
@@ -76,7 +72,7 @@ function keydownAction(e) {
     if (e.code === "Minus") {
         padCanvas(1);
     } else if (e.code === "Equal") {
-        hideCanvasEdge();
+        cropCanvasByOne();
     } else if (e.key === "a") {
         rotateCompass(-45, e);
         redrawCompass(e);
@@ -132,11 +128,11 @@ function redrawCompass(event) {
     syncCompassAngle();
 }
 
-function getWheelSign(e) {
+function wheelSign(e) {
     if (e.wheelDeltaY !== 0) {
-        wheelSign = Math.sign(e.wheelDeltaY);
+        return Math.sign(e.wheelDeltaY);
     } else {
-        wheelSign = Math.sign(e.wheelDeltaX);
+        return Math.sign(e.wheelDeltaX);
     }
 }
 
@@ -149,13 +145,16 @@ function getModKeys(e) {
     };
 }
 
-function syncCurrentPixel() {
+function dropPen() {
     currentPixel = document.querySelector(
         `[data-latitude="${penLatitude}"][data-longitude="${penLongitude}"]`
     );
-}
-function indicateCurrentPixel() {
     currentPixel.id = "currentPixel";
+    drawPixel();
+    placeCompass();
+}
+
+function placeCompass() {
     let newArrowContainer = document.createElement("div");
     let upArrow = document.createElement("div");
     let downArrow = document.createElement("div");
@@ -167,39 +166,35 @@ function indicateCurrentPixel() {
     newArrowContainer.appendChild(upArrow);
     newArrowContainer.appendChild(downArrow);
 }
-function unindicateCurrentPixel() {
-    currentPixel.removeAttribute("id");
-    currentPixel.removeChild(currentPixel.firstChild);
+
+function liftPen() {
+    currentPixel.removeAttribute("id"); // id="currentPixel"
+    let compass = currentPixel.firstChild;
+    currentPixel.removeChild(compass);
 }
 
-function moveAndDraw(wheelEvent, longitudeShift = 0) {
-    unindicateCurrentPixel();
-    getWheelSign(wheelEvent);
-    movePen(wheelSign);
-    indicateCurrentPixel();
-    draw(penLatitude, penLongitude);
+function drawWithPen(wheelEvent) {
+    liftPen();
+    penLatitude += compassNorth[0] * wheelSign(wheelEvent);
+    penLongitude += compassNorth[1] * wheelSign(wheelEvent);
+    containPenDuringDraw();
+    dropPen();
 }
 
-function moveAndDrawPassively(latitudeShift, longitudeShift = 0) {
-    unindicateCurrentPixel();
-    movePen(latitudeShift, longitudeShift);
-    indicateCurrentPixel();
-    draw(penLatitude, penLongitude);
+function penGetPushed(latitudeShift, longitudeShift) {
+    liftPen();
+    penLatitude += latitudeShift;
+    penLongitude += longitudeShift;
+    dropPen();
 }
 
-function draw(penPosition) {
-    syncCurrentPixel();
-    currentPixel.classList.add("drawn");
+function drawPixel(pixelElement = currentPixel) {
+    pixelElement.classList.add("drawn");
 }
 
-function movePen(compassLatitudeShift = wheelSign, longitudeShift = 0) {
-    penLatitude += compassNorth[0] * compassLatitudeShift;
-    penLongitude += compassNorth[1] * compassLatitudeShift + longitudeShift;
-    doNotWrapAround();
-    syncCurrentPixel();
-}
+function movePen(north, wheelSign) {}
 
-function doWrapAround() {
+function penWrapAround() {
     if (penLatitude > maxLatitude) {
         penLatitude = minLatitude;
     } else if (penLatitude < minLatitude) {
@@ -213,7 +208,7 @@ function doWrapAround() {
     }
 }
 
-function doNotWrapAround() {
+function containPenDuringDraw() {
     if (penLatitude > maxLatitude) {
         penLatitude = maxLatitude;
     } else if (penLatitude < minLatitude) {
@@ -240,6 +235,7 @@ function setRanges(height, width) {
     minLongitude = -Math.floor(width / 2);
     maxLongitude = minLongitude + (width - 1);
 }
+
 function createColumn(longitude, height) {
     let column = document.createElement("div");
     column.classList.add("column");
@@ -266,66 +262,47 @@ function createPixel(latitude, longitude) {
 
 function padCanvas(thickness = 1) {
     for (i = 1; i <= thickness; i++) {
-        if (canvas.firstElementChild.classList.contains("hidden")) {
-            unhideCanvasEdge();
-        } else {
-            padCanvasByOne();
-        }
-    }
-    function unhideCanvasEdge() {
-        minLongitude -= 1;
-        maxLongitude += 1;
-
-        let westColumn = canvas.firstElementChild;
-        let eastColumn = canvas.lastElementChild;
-
-        westColumn.classList.remove("hidden");
-        eastColumn.classList.remove("hidden");
-
-        maxLatitude += 1;
-        minLatitude -= 1;
-
-        for (
-            let longitude = minLongitude;
-            longitude <= maxLongitude;
-            longitude++
-        ) {
-            let column = document.querySelector(
-                `.column[data-longitude="${longitude}"]`
-            );
-            let northPixel = column.firstElementChild;
-            let southPixel = column.lastElementChild;
-
-            northPixel.classList.remove("hidden");
-            southPixel.classList.remove("hidden");
-        }
-        canvasSize += 2;
+        padCanvasByOne();
     }
 
     function padCanvasByOne() {
-        let oldCanvasSize = canvasSize;
-        addWestColumn();
-        addEastColumn();
-        growEachColumn();
+        padWest();
+        padEast();
+        padNorthAndSouth();
         canvasSize += 2;
     }
-    function addWestColumn() {
-        let oldMinLongitude = minLongitude;
-        let oldWestColumn = document.querySelector(
-            `.column[data-longitude="${minLongitude}"]`
+    function padWest() {
+        let newMinLongitude = minLongitude - 1;
+        let furtherWestHiddenColumn = document.querySelector(
+            `.hiddenColumn[data-longitude="${newMinLongitude}"]`
         );
-        minLongitude -= 1;
-        let newColumn = createColumn(minLongitude, canvasSize);
-        canvas.insertBefore(newColumn, oldWestColumn);
-    }
-    function addEastColumn() {
-        let oldMaxLongitude = maxLongitude;
-        maxLongitude += 1;
-        let newColumn = createColumn(maxLongitude, canvasSize);
-        canvas.appendChild(newColumn);
-    }
 
-    function growEachColumn() {
+        if (furtherWestHiddenColumn) {
+            revealColumn(furtherWestHiddenColumn);
+        } else {
+            let oldWestColumn = document.querySelector(
+                `.column[data-longitude="${minLongitude}"]`
+            );
+            let newColumn = createColumn(newMinLongitude, canvasSize);
+            canvas.insertBefore(newColumn, oldWestColumn);
+        }
+        minLongitude -= 1;
+    }
+    function padEast() {
+        let newMaxLongitude = maxLongitude + 1;
+        let furtherEastHiddenColumn = document.querySelector(
+            `.hiddenColumn[data-longitude="${newMaxLongitude}"]`
+        );
+
+        if (furtherEastHiddenColumn) {
+            revealColumn(furtherEastHiddenColumn);
+        } else {
+            let newColumn = createColumn(newMaxLongitude, canvasSize);
+            canvas.appendChild(newColumn);
+        }
+        maxLongitude += 1;
+    }
+    function padNorthAndSouth() {
         for (
             let longitude = minLongitude;
             longitude <= maxLongitude;
@@ -334,63 +311,143 @@ function padCanvas(thickness = 1) {
             let column = document.querySelector(
                 `.column[data-longitude="${longitude}"]`
             );
-            addNorthPixel(column, longitude);
-            addSouthPixel(column, longitude);
+            padNorth(column, longitude);
+            padSouth(column, longitude);
         }
         maxLatitude += 1;
         minLatitude -= 1;
 
-        function addNorthPixel(columnElement, longitude) {
-            let oldMaxLatitude = maxLatitude;
-            let oldNorthPixel = document.querySelector(
-                `.pixel[data-longitude="${longitude}"][data-latitude="${maxLatitude}"]`
+        function padNorth(columnElement, longitude) {
+            let newMaxLatitude = maxLatitude + 1;
+            let furtherNorthHiddenPixel = document.querySelector(
+                `.hiddenPixel[data-longitude="${longitude}"][data-latitude="${newMaxLatitude}"]`
             );
-            let newPixel = createPixel(maxLatitude + 1, longitude);
-            columnElement.insertBefore(newPixel, oldNorthPixel);
+            console.log(furtherNorthHiddenPixel);
+            if (furtherNorthHiddenPixel) {
+                revealPixel(furtherNorthHiddenPixel);
+            } else {
+                let oldNorthPixel = document.querySelector(
+                    `.pixel[data-longitude="${longitude}"][data-latitude="${maxLatitude}"]`
+                );
+                let newPixel = createPixel(maxLatitude + 1, longitude);
+                columnElement.insertBefore(newPixel, oldNorthPixel);
+            }
         }
-        function addSouthPixel(columnElement, longitude) {
-            let oldMinLatitude = minLatitude;
-            let newPixel = createPixel(minLatitude - 1, longitude);
-            columnElement.appendChild(newPixel);
+        function padSouth(columnElement, longitude) {
+            let newMinLatitude = minLatitude - 1;
+            let furtherSouthHiddenPixel = document.querySelector(
+                `.hiddenPixel[data-longitude="${longitude}"][data-latitude="${newMinLatitude}"]`
+            );
+            console.log(furtherSouthHiddenPixel);
+            if (furtherSouthHiddenPixel) {
+                revealPixel(furtherSouthHiddenPixel);
+            } else {
+                let newPixel = createPixel(minLatitude - 1, longitude);
+                columnElement.appendChild(newPixel);
+            }
         }
     }
 }
 
-// TO DO: Enable this function to be repeated without bugs
-function hideCanvasEdge() {
-    let latitudeShift =
-        penLatitude === maxLatitude ? -1 : penLatitude === minLatitude ? 1 : 0;
-    let longitudeShift =
-        penLongitude === maxLongitude
-            ? -1
-            : penLongitude === minLongitude
-            ? 1
-            : 0;
-    if (latitudeShift !== 0 || longitudeShift !== 0) {
-        moveAndDrawPassively(latitudeShift, longitudeShift);
-    }
-
-    for (let longitude = minLongitude; longitude <= maxLongitude; longitude++) {
-        let column = document.querySelector(
-            `.column[data-longitude="${longitude}"]`
-        );
-        let northPixel = column.firstElementChild;
-        let southPixel = column.lastElementChild;
-
-        northPixel.classList.add("hidden");
-        southPixel.classList.add("hidden");
-    }
-    maxLatitude -= 1;
-    minLatitude += 1;
-
-    let westColumn = canvas.firstElementChild;
-    let eastColumn = canvas.lastElementChild;
-
-    westColumn.classList.add("hidden");
-    eastColumn.classList.add("hidden");
-
-    minLongitude += 1;
-    maxLongitude -= 1;
+function cropCanvasByOne() {
+    if (canvasSize < 3) return;
+    containPenDuringCrop();
+    cropNorthAndSouth();
+    cropWest();
+    cropEast();
 
     canvasSize -= 2;
+
+    function containPenDuringCrop() {
+        let latitudeShift =
+            penLatitude === maxLatitude
+                ? -1
+                : penLatitude === minLatitude
+                ? 1
+                : 0;
+        let longitudeShift =
+            penLongitude === maxLongitude
+                ? -1
+                : penLongitude === minLongitude
+                ? 1
+                : 0;
+        if (latitudeShift !== 0 || longitudeShift !== 0) {
+            penGetPushed(latitudeShift, longitudeShift);
+        }
+    }
+    function cropNorthAndSouth() {
+        for (
+            let longitude = minLongitude;
+            longitude <= maxLongitude;
+            longitude++
+        ) {
+            let northPixel = document.querySelector(
+                `.pixel[data-latitude="${maxLatitude}"][data-longitude="${longitude}"]`
+            );
+            let southPixel = document.querySelector(
+                `.pixel[data-latitude="${minLatitude}"][data-longitude="${longitude}"]`
+            );
+
+            if (pixelIsDrawn(northPixel) || pixelIsDrawn(southPixel)) {
+                hidePixel(northPixel);
+                hidePixel(southPixel);
+            } else {
+                northPixel.remove();
+                southPixel.remove();
+            }
+        }
+        maxLatitude -= 1;
+        minLatitude += 1;
+    }
+
+    function cropWest() {
+        let westColumn = document.querySelector(
+            `.column[data-longitude="${minLongitude}"]`
+        );
+        if (hasAnyDrawnPixels(westColumn)) {
+            hideColumn(westColumn);
+        } else {
+            westColumn.remove();
+        }
+        minLongitude += 1;
+    }
+    function cropEast() {
+        let eastColumn = document.querySelector(
+            `.column[data-longitude="${maxLongitude}"]`
+        );
+        if (hasAnyDrawnPixels(eastColumn)) {
+            hideColumn(eastColumn);
+        } else {
+            eastColumn.remove();
+        }
+        maxLongitude -= 1;
+    }
+}
+
+function pixelIsDrawn(pixel) {
+    return pixel.classList.contains("drawn");
+}
+function hasAnyDrawnPixels(column) {
+    let pixels = column.children;
+    let drawn = false;
+    for (const pixel of pixels) {
+        if (pixel.classList.contains("drawn")) drawn = true;
+    }
+    return drawn;
+}
+function hideColumn(element) {
+    element.classList.remove("column");
+    element.classList.add("hiddenColumn");
+}
+function revealColumn(element) {
+    element.classList.remove("hiddenColumn");
+    element.classList.add("column");
+}
+function hidePixel(element) {
+    element.classList.remove("pixel");
+    element.classList.add("hiddenPixel");
+}
+function revealPixel(element) {
+    element.classList.remove("hiddenPixel");
+    element.classList.add("pixel");
 }

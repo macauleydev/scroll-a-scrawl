@@ -20,7 +20,6 @@ body {
 }
 
 .container {
-    /* reconsider this section */
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -38,7 +37,6 @@ body {
     align-self: center;
     background-color: white;
     display: flex;
-    /* justify-content: space-evenly; */
     flex-direction: row;
     height: 90svh;
     aspect-ratio: 1 / 1;
@@ -64,7 +62,6 @@ body {
 }
 
 #currentPixel {
-    /* outline: 2px solid red; */
     color: red;
     text-align: center;
     overflow: visible;
@@ -96,6 +93,6 @@ body {
     border-top: 18px solid white;
 }
 
-.hidden {
+.hiddenColumn, .hiddenPixel {
     display: none !important;
 }
