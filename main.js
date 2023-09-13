@@ -72,8 +72,11 @@ function setEventListeners() {
 }
 
 function keydownAction(e) {
-    if (e.code === "Equal") {
+    console.log(e);
+    if (e.code === "Minus") {
         padCanvas(1);
+    } else if (e.code === "Equal") {
+        hideCanvasEdge();
     } else if (e.key === "a") {
         rotateCompass(-45, e);
         redrawCompass(e);
@@ -169,10 +172,17 @@ function unindicateCurrentPixel() {
     currentPixel.removeChild(currentPixel.firstChild);
 }
 
-function moveAndDraw(wheelEvent) {
+function moveAndDraw(wheelEvent, longitudeShift = 0) {
     unindicateCurrentPixel();
     getWheelSign(wheelEvent);
     movePen(wheelSign);
+    indicateCurrentPixel();
+    draw(penLatitude, penLongitude);
+}
+
+function moveAndDrawPassively(latitudeShift, longitudeShift = 0) {
+    unindicateCurrentPixel();
+    movePen(latitudeShift, longitudeShift);
     indicateCurrentPixel();
     draw(penLatitude, penLongitude);
 }
@@ -182,9 +192,9 @@ function draw(penPosition) {
     currentPixel.classList.add("drawn");
 }
 
-function movePen(compassLatitudeShift = wheelSign) {
+function movePen(compassLatitudeShift = wheelSign, longitudeShift = 0) {
     penLatitude += compassNorth[0] * compassLatitudeShift;
-    penLongitude += compassNorth[1] * compassLatitudeShift;
+    penLongitude += compassNorth[1] * compassLatitudeShift + longitudeShift;
     doNotWrapAround();
     syncCurrentPixel();
 }
@@ -256,8 +266,42 @@ function createPixel(latitude, longitude) {
 
 function padCanvas(thickness = 1) {
     for (i = 1; i <= thickness; i++) {
-        padCanvasByOne();
+        if (canvas.firstElementChild.classList.contains("hidden")) {
+            unhideCanvasEdge();
+        } else {
+            padCanvasByOne();
+        }
     }
+    function unhideCanvasEdge() {
+        minLongitude -= 1;
+        maxLongitude += 1;
+
+        let westColumn = canvas.firstElementChild;
+        let eastColumn = canvas.lastElementChild;
+
+        westColumn.classList.remove("hidden");
+        eastColumn.classList.remove("hidden");
+
+        maxLatitude += 1;
+        minLatitude -= 1;
+
+        for (
+            let longitude = minLongitude;
+            longitude <= maxLongitude;
+            longitude++
+        ) {
+            let column = document.querySelector(
+                `.column[data-longitude="${longitude}"]`
+            );
+            let northPixel = column.firstElementChild;
+            let southPixel = column.lastElementChild;
+
+            northPixel.classList.remove("hidden");
+            southPixel.classList.remove("hidden");
+        }
+        canvasSize += 2;
+    }
+
     function padCanvasByOne() {
         let oldCanvasSize = canvasSize;
         addWestColumn();
@@ -312,10 +356,41 @@ function padCanvas(thickness = 1) {
     }
 }
 
-// TO DO:
-function cropCanvas(thickness) {
-    for (i = 1; i <= thickness; i++) {
-        cropCanvasByOne();
+// TO DO: Enable this function to be repeated without bugs
+function hideCanvasEdge() {
+    let latitudeShift =
+        penLatitude === maxLatitude ? -1 : penLatitude === minLatitude ? 1 : 0;
+    let longitudeShift =
+        penLongitude === maxLongitude
+            ? -1
+            : penLongitude === minLongitude
+            ? 1
+            : 0;
+    if (latitudeShift !== 0 || longitudeShift !== 0) {
+        moveAndDrawPassively(latitudeShift, longitudeShift);
     }
-    function cropCanvasByOne() {}
+
+    for (let longitude = minLongitude; longitude <= maxLongitude; longitude++) {
+        let column = document.querySelector(
+            `.column[data-longitude="${longitude}"]`
+        );
+        let northPixel = column.firstElementChild;
+        let southPixel = column.lastElementChild;
+
+        northPixel.classList.add("hidden");
+        southPixel.classList.add("hidden");
+    }
+    maxLatitude -= 1;
+    minLatitude += 1;
+
+    let westColumn = canvas.firstElementChild;
+    let eastColumn = canvas.lastElementChild;
+
+    westColumn.classList.add("hidden");
+    eastColumn.classList.add("hidden");
+
+    minLongitude += 1;
+    maxLongitude -= 1;
+
+    canvasSize -= 2;
 }
