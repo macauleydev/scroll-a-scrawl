@@ -73,10 +73,10 @@ function keydownAction(e) {
         padCanvas(1);
     } else if (e.code === "Equal") {
         cropCanvasByOne();
-    } else if (e.key === "a") {
+    } else if (e.key === "r" || e.key === "a") {
         rotateCompass(-45, e);
         redrawCompass(e);
-    } else if (e.key === "z") {
+    } else if (e.key === "t" || e.key === "z") {
         rotateCompass(45, e);
         redrawCompass(e);
     } else {

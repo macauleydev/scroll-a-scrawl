@@ -3,17 +3,26 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Scroll Sketcher</title>
+        <title>Scroll-a-Scrawl</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Annie+Use+Your+Telescope&family=Caveat:wght@400;600&family=Shadows+Into+Light&family=Shantell+Sans:wght@300;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="style.css" />
         <script src="main.js" defer></script>
     </head>
     <body>
-        <div class="container">
-            <div class="text">
-                <p>The instructions will go here.</p>
+        <div class="mainContainer">
+            <div class="instructions">
+                <!-- <h2>You can:</h2> -->
+                <p><strong>Scroll</strong> your mouse wheel to <strong>scrawl</strong> along the compass&rsquor;s main axis.</p>
+                <p>Hold <kbd>Shift</kbd>, <kbd>Ctrl</kbd>, <kbd>Alt</kbd>, etc. to <strong>alter</strong> the compass angle.</p>
+            
+                <p>Type <kbd>R</kbd> & <kbd>T</kbd> (or <kbd>A</kbd> & <kbd>Z</kbd>) to <strong>turn</strong> the compass.</p>
+                <p>Type <kbd>+</kbd> or <kbd>-</kbd> to <strong>zoom</strong> in or out.</p>
             </div>
-            <div class="canvas">
-                
+            <div class="canvasContainer">
+                <div class="canvas"></div>
+                <h1 class="title">Scroll-a-Scrawl</h1>
             </div>
         </div>
     </body>
