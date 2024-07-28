@@ -1,162 +1,177 @@
 *,
 *::before,
 *::after {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 * {
-    margin: 0;
-    padding: 0;
-    font: inherit;
+  margin: 0;
+  padding: 0;
+  font: inherit;
 }
 
 img {
-    display: block;
-    max-width: 100%;
+  display: block;
+  max-width: 100%;
 }
 
 body {
-    background-color: skyblue;
-    font-family: "Shantell Sans", cursive;
-    font-weight: 400;
+  background-color: skyblue;
+  font-family: "Shantell Sans", cursive;
+  font-weight: 400;
+}
+
+a {
+  text-decoration: none;
+  color: black;
+}
+a:hover,
+a:active {
+  text-transform: lowercase;
+  font-weight: 700;
+}
+a:active {
+  color: red;
+  text-decoration: underline wavy white 2px;
 }
 
 h1 {
-    text-align: center;
+  text-align: center;
 
-    font-family: "Shantell Sans", cursive;
-    font-weight: 500;
-    font-style: italic;
-    font-size: 2.4rem;
+  font-family: "Shantell Sans", cursive;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 2.4rem;
 
-    font-family: "Caveat", cursive;
-    font-weight: 500; /* or 600 or 400 */
-    font-style: normal;
-    font-size: 3.2rem;
+  font-family: "Caveat", cursive;
+  font-weight: 500; /* or 600 or 400 */
+  font-style: normal;
+  font-size: 3.2rem;
 }
 h1,
 h2 {
 }
 
 h2 {
-    font-size: 1.4rem;
-    font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 p,
 ul,
 ol {
-    font-size: 1.15rem;
-    margin-block: 1rem;
+  font-size: 1.15rem;
+  margin-block: 1rem;
 }
 
 strong {
-    font-weight: 600;
+  font-weight: 600;
 }
 
 .mainContainer {
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: row-reverse;
-    justify-content: space-evenly;
-    gap: 1rem;
-    align-items: center;
-    height: 100svh;
-    width: calc(100% - 1rem);
-    margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row-reverse;
+  justify-content: space-evenly;
+  gap: 1rem;
+  align-items: center;
+  height: 100svh;
+  width: calc(100% - 1rem);
+  margin-inline: auto;
 }
 
 .instructions {
-    flex: 1;
-    /* margin-inline: auto; */
-    max-width: 30ch;
+  flex: 1;
+  /* margin-inline: auto; */
+  max-width: 30ch;
 }
 .instructions kbd {
-    background-color: #eee;
-    border-radius: 3px;
-    border: 1px solid #b4b4b4;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2),
-        0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
-    color: #3f3f3f;
-    display: inline-block;
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: 1;
-    padding: 2px 4px;
-    white-space: nowrap;
+  background-color: #eee;
+  border-radius: 3px;
+  border: 1px solid #b4b4b4;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+  color: #3f3f3f;
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 4px;
+  white-space: nowrap;
 }
 
 .canvasContainer {
-    align-self: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    /* margin-inline: auto; */
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* margin-inline: auto; */
 }
 
 .title {
-    flex: 1;
-    margin-top: 0.25rem;
+  flex: 1;
+  margin-top: 0.25rem;
 }
 .canvas {
-    background-color: white;
-    display: flex;
-    flex-direction: row;
-    height: 90svmin;
-    aspect-ratio: 1 / 1;
-    padding: 1px;
-    outline: 2px solid black;
+  background-color: white;
+  display: flex;
+  flex-direction: row;
+  height: 90svmin;
+  aspect-ratio: 1 / 1;
+  padding: 1px;
+  outline: 2px solid black;
 }
 
 .column {
-    flex: 1;
-    display: flex;
-    flex-flow: column;
+  flex: 1;
+  display: flex;
+  flex-flow: column;
 }
 
 .pixel {
-    flex: 1;
-    margin: 1px;
-    background-color: lightgoldenrodyellow;
+  flex: 1;
+  margin: 1px;
+  background-color: lightgoldenrodyellow;
 }
 
 .drawn {
-    background-color: gray;
+  background-color: gray;
 }
 
 #currentPixel {
-    color: red;
-    text-align: center;
-    overflow: visible;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  color: red;
+  text-align: center;
+  overflow: visible;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #arrows {
-    position: relative;
-    transition: all 80ms;
+  position: relative;
+  transition: all 80ms;
 }
 
 #upArrow,
 #downArrow {
-    position: absolute;
-    width: 0px;
-    height: 0px;
-    inset: 50%;
-    border-left: 3px solid transparent;
-    border-right: 3px solid transparent;
+  position: absolute;
+  width: 0px;
+  height: 0px;
+  inset: 50%;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
 }
 #upArrow {
-    transform: translate(-50%, calc(-100% - 1px));
-    border-bottom: 18px solid red;
+  transform: translate(-50%, calc(-100% - 1px));
+  border-bottom: 18px solid red;
 }
 #downArrow {
-    transform: translate(-50%, 1px);
-    border-top: 18px solid white;
+  transform: translate(-50%, 1px);
+  border-top: 18px solid white;
 }
 
 .hiddenColumn,
 .hiddenPixel {
-    display: none !important;
+  display: none !important;
 }
